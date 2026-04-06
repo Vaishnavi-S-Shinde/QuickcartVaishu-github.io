@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* आपका original CSS यहाँ रहेगा - वही copy करें */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #f8fafc; }
         .navbar { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 14px 0; }
@@ -43,6 +44,7 @@
 </head>
 <body>
 
+<!-- Navbar same as yours -->
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container">
         <a class="navbar-brand" href="#" onclick="switchTab('home'); return false;"><i class="fas fa-bolt"></i> QuickCart Pro</a>
@@ -53,7 +55,6 @@
             <ul class="navbar-nav ms-auto align-items-center gap-3">
                 <li class="nav-item"><a class="nav-link" id="homeTab" onclick="switchTab('home')"><i class="fas fa-home"></i> Home</a></li>
                 <li class="nav-item"><a class="nav-link" id="ordersTab" onclick="switchTab('orders')"><i class="fas fa-history"></i> Orders</a></li>
-                <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-user-shield"></i> Admin</a></li>
                 <li class="nav-item position-relative">
                     <a class="nav-link" id="cartIconBtn" style="cursor: pointer;">
                         <i class="fas fa-shopping-cart"></i> Cart
@@ -80,7 +81,7 @@
         </div>
     </div>
 
-    <div class="container py-4">
+    <div class="container py-4" id="productsSection">
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="🔍 Search products...">
@@ -142,9 +143,7 @@
 <!-- RECEIPT PAGE -->
 <div id="receiptPage" class="page-container">
     <div class="container">
-        <div id="receiptDisplay" class="receipt-card">
-            <!-- Receipt will be loaded here -->
-        </div>
+        <div id="receiptDisplay" class="receipt-card"></div>
     </div>
 </div>
 
@@ -172,31 +171,52 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ============ STATE ============
+// ============ DEMO PRODUCTS (No backend needed) ============
+const allProducts = [
+    { id: 1, name: "iPhone 15 Pro Max", category: "Electronics", price: 129999, rating: 4.8, badge: "Hot", description: "Latest A17 Pro chip, titanium design", image: "https://via.placeholder.com/300x200?text=iPhone+15", original_price: 145000 },
+    { id: 2, name: "Sony WH-1000XM5", category: "Electronics", price: 29999, rating: 4.9, badge: "Bestseller", description: "Industry-leading noise cancellation", image: "https://via.placeholder.com/300x200?text=Sony+Headphones", original_price: 35000 },
+    { id: 3, name: "Nike Air Max", category: "Clothing", price: 12999, rating: 4.6, badge: "Trending", description: "Comfortable running shoes", image: "https://via.placeholder.com/300x200?text=Nike+Shoes", original_price: 15999 },
+    { id: 4, name: "MacBook Pro M3", category: "Electronics", price: 169999, rating: 4.9, badge: "New", description: "16-inch, 36GB RAM", image: "https://via.placeholder.com/300x200?text=MacBook", original_price: 189999 },
+    { id: 5, name: "Samsung 4K TV", category: "Electronics", price: 64999, rating: 4.7, badge: "Sale", description: "55-inch Smart TV", image: "https://via.placeholder.com/300x200?text=Samsung+TV", original_price: 79999 },
+    { id: 6, name: "Leather Jacket", category: "Clothing", price: 4999, rating: 4.5, badge: "", description: "Premium genuine leather", image: "https://via.placeholder.com/300x200?text=Jacket", original_price: 7999 },
+    { id: 7, name: "Study Table", category: "Furniture", price: 7999, rating: 4.4, badge: "", description: "Wooden study table with drawer", image: "https://via.placeholder.com/300x200?text=Study+Table", original_price: 11999 },
+    { id: 8, name: "Smart Watch", category: "Accessories", price: 3999, rating: 4.3, badge: "", description: "Fitness tracker, heart rate monitor", image: "https://via.placeholder.com/300x200?text=Smart+Watch", original_price: 5999 },
+    { id: 9, name: "Yoga Mat", category: "Sports", price: 999, rating: 4.6, badge: "", description: "Non-slip, eco-friendly", image: "https://via.placeholder.com/300x200?text=Yoga+Mat", original_price: 1499 },
+    { id: 10, name: "Coffee Mug Set", category: "Home & Living", price: 699, rating: 4.7, badge: "", description: "Set of 4 ceramic mugs", image: "https://via.placeholder.com/300x200?text=Mug+Set", original_price: 999 }
+];
+
+let filteredProducts = [...allProducts];
+let currentPage = 1;
+const itemsPerPage = 6;
 let cart = [];
 let orders = [];
-let currentPage = 1;
-let hasMore = true;
 let currentOrder = null;
 
-// ============ LOAD PRODUCTS ============
-async function loadProducts() {
-    const search = document.getElementById('searchInput')?.value || '';
+// ============ LOAD PRODUCTS (Pure Frontend) ============
+function loadProducts() {
+    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const category = document.getElementById('categoryFilter')?.value || 'all';
     
-    const res = await fetch(`/api/products?page=${currentPage}&search=${search}&category=${category}`);
-    const data = await res.json();
+    filteredProducts = allProducts.filter(product => {
+        const matchSearch = product.name.toLowerCase().includes(search) || product.description.toLowerCase().includes(search);
+        const matchCategory = category === 'all' || product.category === category;
+        return matchSearch && matchCategory;
+    });
+    
+    const start = 0;
+    const end = currentPage * itemsPerPage;
+    const productsToShow = filteredProducts.slice(0, end);
     
     const grid = document.getElementById('productGrid');
-    if (currentPage === 1) grid.innerHTML = '';
+    grid.innerHTML = '';
     
-    data.products.forEach(prod => {
+    productsToShow.forEach(prod => {
         grid.innerHTML += `
             <div class="col-lg-3 col-md-4 col-sm-6">
                 <div class="product-card">
                     <div class="product-img">
                         <img src="${prod.image}" alt="${prod.name}">
-                        <div class="product-badge">${prod.badge}</div>
+                        ${prod.badge ? `<div class="product-badge">${prod.badge}</div>` : ''}
                     </div>
                     <div class="p-3">
                         <div class="rating text-warning">${'★'.repeat(Math.floor(prod.rating))}${'☆'.repeat(5-Math.floor(prod.rating))} (${prod.rating})</div>
@@ -204,7 +224,7 @@ async function loadProducts() {
                         <small class="text-secondary">${prod.description.substring(0, 50)}</small>
                         <div class="d-flex justify-content-between mt-2">
                             <span class="fw-bold fs-5" style="color:#f97316;">₹${prod.price.toLocaleString()}</span>
-                            <span class="text-decoration-line-through text-secondary">₹${Math.round(prod.original_price * 1.4).toLocaleString()}</span>
+                            <span class="text-decoration-line-through text-secondary">₹${prod.original_price.toLocaleString()}</span>
                         </div>
                         <button class="btn-add-cart mt-2" onclick="addToCart(${prod.id}, '${prod.name.replace(/'/g, "\\'")}', ${prod.price})">
                             <i class="fas fa-cart-plus"></i> Add to Cart
@@ -215,15 +235,13 @@ async function loadProducts() {
         `;
     });
     
-    hasMore = data.has_more;
+    const hasMore = end < filteredProducts.length;
     document.getElementById('loadMoreBtn').style.display = hasMore ? 'block' : 'none';
 }
 
 function loadMore() {
-    if (hasMore) {
-        currentPage++;
-        loadProducts();
-    }
+    currentPage++;
+    loadProducts();
 }
 
 // ============ CART FUNCTIONS ============
@@ -304,10 +322,15 @@ function loadCart() {
         cart = JSON.parse(savedCart);
         updateCartUI();
     }
+    
+    const savedOrders = localStorage.getItem('quickcart_orders');
+    if (savedOrders) {
+        orders = JSON.parse(savedOrders);
+    }
 }
 
-// ============ CHECKOUT & ORDER ============
-document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
+// ============ CHECKOUT & ORDER (Pure Frontend) ============
+document.getElementById('checkoutForm')?.addEventListener('submit', (e) => {
     e.preventDefault();
     
     if (cart.length === 0) {
@@ -323,13 +346,13 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
     
     const total = subtotal - discount;
     
-    const orderData = {
-        customer: {
-            name: document.getElementById('fullName').value,
-            email: document.getElementById('emailAddress').value,
-            address: document.getElementById('shippingAddress').value,
-            payment: document.getElementById('paymentMethod').value
-        },
+    const order = {
+        id: 'ORD' + Date.now(),
+        date: new Date().toLocaleString(),
+        customer_name: document.getElementById('fullName').value,
+        customer_email: document.getElementById('emailAddress').value,
+        customer_address: document.getElementById('shippingAddress').value,
+        payment_method: document.getElementById('paymentMethod').value,
         items: cart.map(item => ({
             name: item.name,
             quantity: item.quantity,
@@ -340,32 +363,23 @@ document.getElementById('checkoutForm')?.addEventListener('submit', async (e) =>
         total: total
     };
     
-    try {
-        const res = await fetch('/api/place_order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
-        });
-        
-        const data = await res.json();
-        if (data.success) {
-            // Clear cart
-            cart = [];
-            saveCart();
-            
-            // Show receipt
-            showReceipt(data.order);
-            
-            // Switch to receipt page
-            switchTab('receipt');
-            showToast(`✅ Order placed successfully! Order ID: ${data.order_id}`);
-        }
-    } catch (error) {
-        showToast("Error placing order!", true);
-    }
+    // Save order
+    orders.unshift(order);
+    localStorage.setItem('quickcart_orders', JSON.stringify(orders));
+    
+    // Clear cart
+    cart = [];
+    saveCart();
+    
+    // Show receipt
+    showReceipt(order);
+    
+    // Switch to receipt page
+    switchTab('receipt');
+    showToast(`✅ Order placed successfully! Order ID: ${order.id}`);
 });
 
-// ============ SHOW RECEIPT WITH DOWNLOAD BUTTON ============
+// ============ SHOW RECEIPT ============
 function showReceipt(order) {
     currentOrder = order;
     
@@ -503,12 +517,10 @@ function downloadReceipt() {
 }
 
 // ============ LOAD ORDERS ============
-async function loadOrders() {
-    const res = await fetch('/api/get_orders');
-    const ordersList = await res.json();
+function loadOrders() {
     const container = document.getElementById('ordersList');
     
-    if (ordersList.length === 0) {
+    if (orders.length === 0) {
         container.innerHTML = `
             <div class="col-md-8 text-center text-muted py-5">
                 <i class="fas fa-history fa-4x mb-3 opacity-50"></i>
@@ -520,7 +532,7 @@ async function loadOrders() {
         return;
     }
     
-    container.innerHTML = '<div class="col-md-8">' + ordersList.map(order => `
+    container.innerHTML = '<div class="col-md-8">' + orders.map(order => `
         <div class="card mb-3">
             <div class="card-header bg-warning">
                 <strong><i class="fas fa-receipt"></i> Order #${order.id}</strong>
@@ -541,20 +553,16 @@ async function loadOrders() {
     `).join('') + '</div>';
 }
 
-async function viewOrderReceipt(orderId) {
-    const res = await fetch('/api/get_orders');
-    const ordersList = await res.json();
-    const order = ordersList.find(o => o.id === orderId);
+function viewOrderReceipt(orderId) {
+    const order = orders.find(o => o.id === orderId);
     if (order) {
         showReceipt(order);
         switchTab('receipt');
     }
 }
 
-async function downloadOrderReceipt(orderId) {
-    const res = await fetch('/api/get_orders');
-    const ordersList = await res.json();
-    const order = ordersList.find(o => o.id === orderId);
+function downloadOrderReceipt(orderId) {
+    const order = orders.find(o => o.id === orderId);
     if (order) {
         currentOrder = order;
         downloadReceipt();
