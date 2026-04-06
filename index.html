@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickCart Pro | Complete E-Commerce</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        .navbar { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 14px 0; }
+        .navbar-brand { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #facc15, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .nav-link { color: #e2e8f0 !important; cursor: pointer; transition: 0.2s; }
+        .nav-link:hover { color: #f97316 !important; }
+        .nav-link.active-tab { color: #f97316 !important; border-bottom: 2px solid #f97316; }
+        .hero-section { background: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%); color: white; padding: 80px 0; }
+        .product-card { background: white; border-radius: 20px; overflow: hidden; transition: all 0.3s; border: 1px solid #e2e8f0; height: 100%; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 30px -12px rgba(0,0,0,0.2); }
+        .product-img { height: 200px; position: relative; overflow: hidden; }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; }
+        .product-badge { position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; border-radius: 20px; padding: 4px 12px; font-size: 0.7rem; font-weight: 700; }
+        .btn-add-cart { background: linear-gradient(95deg, #1e293b, #0f172a); border: none; padding: 10px; border-radius: 40px; font-weight: 600; color: white; width: 100%; transition: all 0.3s; }
+        .btn-add-cart:hover { background: linear-gradient(95deg, #f97316, #ef4444); transform: scale(0.98); }
+        .cart-sidebar { position: fixed; top: 0; right: -450px; width: 450px; height: 100vh; background: white; z-index: 1050; transition: right 0.3s; display: flex; flex-direction: column; border-left: 1px solid #e2e8f0; }
+        .cart-sidebar.open { right: 0; }
+        .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; display: none; backdrop-filter: blur(3px); }
+        .cart-overlay.show { display: block; }
+        .page-container { display: none; padding: 50px 0; min-height: 60vh; }
+        .page-container.active-page { display: block; }
+        .receipt-card { background: white; border-radius: 28px; border: 1px solid #e2e8f0; overflow: hidden; max-width: 900px; margin: 0 auto; }
+        .receipt-header { background: linear-gradient(135deg, #f97316, #ef4444); color: white; padding: 30px; text-align: center; }
+        .receipt-body { padding: 30px; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .receipt-table th, .receipt-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        .receipt-table th { background: #f8fafc; font-weight: 600; }
+        .toast-custom { position: fixed; bottom: 25px; left: 25px; z-index: 1100; background: #10b981; color: white; padding: 12px 24px; border-radius: 60px; transform: translateX(-120%); transition: transform 0.3s; }
+        .toast-custom.show-toast { transform: translateX(0); }
+        .back-to-top { position: fixed; bottom: 24px; right: 24px; background: #f97316; border-radius: 50%; width: 48px; height: 48px; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 99; }
+        @media (max-width: 768px) { .cart-sidebar { width: 100%; right: -100%; } }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#" onclick="switchTab('home'); return false;"><i class="fas fa-bolt"></i> QuickCart Pro</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav ms-auto align-items-center gap-3">
+                <li class="nav-item"><a class="nav-link" id="homeTab" onclick="switchTab('home')"><i class="fas fa-home"></i> Home</a></li>
+                <li class="nav-item"><a class="nav-link" id="ordersTab" onclick="switchTab('orders')"><i class="fas fa-history"></i> Orders</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-user-shield"></i> Admin</a></li>
+                <li class="nav-item position-relative">
+                    <a class="nav-link" id="cartIconBtn" style="cursor: pointer;">
+                        <i class="fas fa-shopping-cart"></i> Cart
+                        <span id="cartGlobalBadge" class="badge bg-danger rounded-pill ms-1">0</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="page-container active-page">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h1 class="display-4 fw-bold">Level Up Your <span style="color: #ffd966;">Shopping</span></h1>
+                    <p class="lead">50+ Premium products • Instant PDF Receipts • Easy Returns</p>
+                    <button class="btn btn-light rounded-pill px-4 py-2 fw-bold" onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})">Explore Now →</button>
+                </div>
+                <div class="col-md-5 text-center"><i class="fas fa-rocket" style="font-size: 5rem;"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="🔍 Search products...">
+            </div>
+            <div class="col-md-3">
+                <select id="categoryFilter" class="form-select rounded-pill">
+                    <option value="all">All Categories</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Furniture">Furniture</option>
+                    <option value="Home & Living">Home & Living</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="Sports">Sports</option>
+                </select>
+            </div>
+        </div>
+        <div class="row g-4" id="productGrid"></div>
+        <div class="text-center mt-4" id="loadMoreBtn">
+            <button class="btn btn-outline-warning rounded-pill px-4" onclick="loadMore()">Load More →</button>
+        </div>
+    </div>
+</div>
+
+<!-- ORDERS PAGE -->
+<div id="ordersPage" class="page-container">
+    <div class="container">
+        <h2 class="text-center mb-4 fw-bold" style="background: linear-gradient(135deg, #f97316, #dc2626); -webkit-background-clip: text; background-clip: text; color: transparent;">📜 Order History</h2>
+        <div id="ordersList" class="row justify-content-center"></div>
+    </div>
+</div>
+
+<!-- CHECKOUT PAGE -->
+<div id="checkoutPage" class="page-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card p-4" style="background: white; border-radius: 28px;">
+                    <h3 class="mb-4">Secure Checkout</h3>
+                    <form id="checkoutForm">
+                        <input type="text" id="fullName" class="form-control mb-3" placeholder="Full Name" required>
+                        <input type="email" id="emailAddress" class="form-control mb-3" placeholder="Email" required>
+                        <textarea id="shippingAddress" class="form-control mb-3" rows="2" placeholder="Shipping Address" required></textarea>
+                        <select id="paymentMethod" class="form-select mb-3">
+                            <option>Credit Card</option><option>UPI</option><option>Cash on Delivery</option>
+                        </select>
+                        <div class="mb-3">
+                            <input type="text" id="couponCode" class="form-control" placeholder="Coupon Code (SAVE10, WELCOME15)">
+                            <small id="couponMsg" class="text-success"></small>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold">Place Order → View Receipt</button>
+                        <button type="button" class="btn btn-outline-secondary w-100 rounded-pill py-2 mt-2" onclick="switchTab('home')">← Back to Shop</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RECEIPT PAGE -->
+<div id="receiptPage" class="page-container">
+    <div class="container">
+        <div id="receiptDisplay" class="receipt-card">
+            <!-- Receipt will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="p-3 border-bottom d-flex justify-content-between">
+        <h4><i class="fas fa-bag-shopping"></i> Your Cart</h4>
+        <button id="closeCartBtn" class="btn-close"></button>
+    </div>
+    <div class="flex-grow-1 overflow-auto p-3" id="cartItemsList">
+        <div class="text-center text-muted mt-5">Cart is empty ✨</div>
+    </div>
+    <div class="p-3 border-top">
+        <div class="d-flex justify-content-between fw-bold fs-5 mb-3">
+            <span>Total:</span>
+            <span id="cartTotalAmount">₹0</span>
+        </div>
+        <button id="checkoutBtn" class="btn btn-warning w-100 rounded-pill py-2">Proceed to Checkout</button>
+    </div>
+</div>
+
+<div id="toastMsg" class="toast-custom"></div>
+<div class="back-to-top" id="backToTopBtn"><i class="fas fa-arrow-up text-white"></i></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============ STATE ============
+let cart = [];
+let orders = [];
+let currentPage = 1;
+let hasMore = true;
+let currentOrder = null;
+
+// ============ LOAD PRODUCTS ============
+async function loadProducts() {
+    const search = document.getElementById('searchInput')?.value || '';
+    const category = document.getElementById('categoryFilter')?.value || 'all';
+    
+    const res = await fetch(`/api/products?page=${currentPage}&search=${search}&category=${category}`);
+    const data = await res.json();
+    
+    const grid = document.getElementById('productGrid');
+    if (currentPage === 1) grid.innerHTML = '';
+    
+    data.products.forEach(prod => {
+        grid.innerHTML += `
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="product-card">
+                    <div class="product-img">
+                        <img src="${prod.image}" alt="${prod.name}">
+                        <div class="product-badge">${prod.badge}</div>
+                    </div>
+                    <div class="p-3">
+                        <div class="rating text-warning">${'★'.repeat(Math.floor(prod.rating))}${'☆'.repeat(5-Math.floor(prod.rating))} (${prod.rating})</div>
+                        <h6 class="fw-bold mt-1">${prod.name.substring(0, 35)}</h6>
+                        <small class="text-secondary">${prod.description.substring(0, 50)}</small>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="fw-bold fs-5" style="color:#f97316;">₹${prod.price.toLocaleString()}</span>
+                            <span class="text-decoration-line-through text-secondary">₹${Math.round(prod.original_price * 1.4).toLocaleString()}</span>
+                        </div>
+                        <button class="btn-add-cart mt-2" onclick="addToCart(${prod.id}, '${prod.name.replace(/'/g, "\\'")}', ${prod.price})">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    hasMore = data.has_more;
+    document.getElementById('loadMoreBtn').style.display = hasMore ? 'block' : 'none';
+}
+
+function loadMore() {
+    if (hasMore) {
+        currentPage++;
+        loadProducts();
+    }
+}
+
+// ============ CART FUNCTIONS ============
+function addToCart(id, name, price) {
+    let existing = cart.find(item => item.id === id);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({ id, name, price, quantity: 1 });
+    }
+    saveCart();
+    showToast(`${name} added to cart!`);
+}
+
+function updateCartUI() {
+    const container = document.getElementById('cartItemsList');
+    if (!container) return;
+    
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted mt-5"><i class="fas fa-cart-shopping fa-3x mb-3 opacity-50"></i><br/>Cart is empty</div>';
+        document.getElementById('cartTotalAmount').innerText = '₹0';
+        document.getElementById('cartGlobalBadge').innerText = '0';
+        return;
+    }
+    
+    let total = 0;
+    let html = '';
+    cart.forEach(item => {
+        total += item.price * item.quantity;
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <div style="flex:2">
+                    <strong>${item.name.substring(0, 25)}</strong><br>
+                    <small class="text-secondary">₹${item.price.toLocaleString()}</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <span class="fw-bold">${item.quantity}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>
+                    <button class="btn btn-sm btn-danger ms-1" onclick="removeFromCart(${item.id})"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="fw-bold ms-2" style="min-width:70px; text-align:right;">₹${(item.price * item.quantity).toLocaleString()}</div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    document.getElementById('cartTotalAmount').innerText = `₹${total.toLocaleString()}`;
+    document.getElementById('cartGlobalBadge').innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+function updateQuantity(id, delta) {
+    const idx = cart.findIndex(item => item.id === id);
+    if (idx !== -1) {
+        const newQty = cart[idx].quantity + delta;
+        if (newQty <= 0) {
+            cart.splice(idx, 1);
+        } else {
+            cart[idx].quantity = newQty;
+        }
+        saveCart();
+    }
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    saveCart();
+    showToast("Item removed from cart");
+}
+
+function saveCart() {
+    localStorage.setItem('quickcart_cart', JSON.stringify(cart));
+    updateCartUI();
+}
+
+function loadCart() {
+    const savedCart = localStorage.getItem('quickcart_cart');
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+        updateCartUI();
+    }
+}
+
+// ============ CHECKOUT & ORDER ============
+document.getElementById('checkoutForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (cart.length === 0) {
+        showToast("Cart is empty!", true);
+        return;
+    }
+    
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    let discount = 0;
+    const couponCode = document.getElementById('couponCode')?.value.toUpperCase();
+    if (couponCode === 'SAVE10') discount = subtotal * 0.1;
+    else if (couponCode === 'WELCOME15') discount = subtotal * 0.15;
+    
+    const total = subtotal - discount;
+    
+    const orderData = {
+        customer: {
+            name: document.getElementById('fullName').value,
+            email: document.getElementById('emailAddress').value,
+            address: document.getElementById('shippingAddress').value,
+            payment: document.getElementById('paymentMethod').value
+        },
+        items: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+        })),
+        subtotal: subtotal,
+        discount: discount,
+        total: total
+    };
+    
+    try {
+        const res = await fetch('/api/place_order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            // Clear cart
+            cart = [];
+            saveCart();
+            
+            // Show receipt
+            showReceipt(data.order);
+            
+            // Switch to receipt page
+            switchTab('receipt');
+            showToast(`✅ Order placed successfully! Order ID: ${data.order_id}`);
+        }
+    } catch (error) {
+        showToast("Error placing order!", true);
+    }
+});
+
+// ============ SHOW RECEIPT WITH DOWNLOAD BUTTON ============
+function showReceipt(order) {
+    currentOrder = order;
+    
+    const receiptHTML = `
+        <div class="receipt-header">
+            <i class="fas fa-check-circle fa-3x mb-2"></i>
+            <h2 class="mb-1">Payment Receipt</h2>
+            <p>Thank you for shopping with QuickCart Pro</p>
+        </div>
+        <div class="receipt-body">
+            <div class="row mb-4">
+                <div class="col-6">
+                    <small class="text-secondary">Order ID</small>
+                    <div class="fw-bold fs-5">${order.id}</div>
+                </div>
+                <div class="col-6 text-end">
+                    <small class="text-secondary">Date</small>
+                    <div class="fw-bold">${order.date}</div>
+                </div>
+            </div>
+            
+            <div class="mb-4 p-3 rounded-3" style="background: #f8fafc;">
+                <h6><i class="fas fa-user"></i> Customer Information</h6>
+                <div class="row">
+                    <div class="col-md-6"><strong>Name:</strong> ${order.customer_name}</div>
+                    <div class="col-md-6"><strong>Email:</strong> ${order.customer_email}</div>
+                    <div class="col-12"><strong>Address:</strong> ${order.customer_address}</div>
+                    <div class="col-12"><strong>Payment Method:</strong> ${order.payment_method}</div>
+                </div>
+            </div>
+            
+            <h6 class="mb-2"><i class="fas fa-box"></i> Order Items</h6>
+            <table class="receipt-table">
+                <thead>
+                    <tr><th>Product</th><th style="width:80px">Qty</th><th style="width:120px">Price</th><th style="width:120px">Total</th></tr>
+                </thead>
+                <tbody>
+                    ${order.items.map(item => `
+                        <tr>
+                            <td>${item.name}</td>
+                            <td class="text-center">${item.quantity}</td>
+                            <td class="text-end">₹${item.price.toLocaleString()}</td>
+                            <td class="text-end">₹${(item.price * item.quantity).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr><td colspan="3" class="text-end"><strong>Subtotal:</strong></td><td class="text-end">₹${order.subtotal.toLocaleString()}</td></tr>
+                    ${order.discount > 0 ? `<tr><td colspan="3" class="text-end"><strong>Discount:</strong></td><td class="text-end text-success">-₹${order.discount.toLocaleString()}</td></tr>` : ''}
+                    <tr style="border-top: 2px solid #f97316;"><td colspan="3" class="text-end"><strong class="fs-5">Grand Total:</strong></td><td class="text-end"><strong class="fs-5" style="color:#f97316;">₹${order.total.toLocaleString()}</strong></td></tr>
+                </tfoot>
+            </table>
+            
+            <div class="text-center mt-4 pt-3 border-top">
+                <button class="btn btn-success rounded-pill px-4 py-2 me-2" onclick="downloadReceipt()">
+                    <i class="fas fa-download"></i> Download Receipt
+                </button>
+                <button class="btn btn-warning rounded-pill px-4 py-2" onclick="continueShopping()">
+                    <i class="fas fa-shopping-bag"></i> Continue Shopping
+                </button>
+                <button class="btn btn-outline-secondary rounded-pill px-4 py-2 ms-2" onclick="viewOrders()">
+                    <i class="fas fa-history"></i> View Orders
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('receiptDisplay').innerHTML = receiptHTML;
+}
+
+// ============ DOWNLOAD RECEIPT PDF ============
+function downloadReceipt() {
+    if (!currentOrder) return;
+    
+    const pdfHTML = `
+        <div style="padding: 40px; font-family: 'Inter', Arial, sans-serif; max-width: 800px; margin: 0 auto; background: white;">
+            <div style="text-align: center; border-bottom: 3px solid #f97316; padding-bottom: 20px; margin-bottom: 25px;">
+                <h1 style="color: #f97316; margin: 0;">QuickCart Pro</h1>
+                <h2 style="color: #333;">Payment Receipt</h2>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 25px; padding: 15px; background: #f8fafc; border-radius: 12px;">
+                <div><strong>Order ID:</strong> ${currentOrder.id}</div>
+                <div><strong>Date:</strong> ${currentOrder.date}</div>
+                <div><strong>Status:</strong> <span style="color: #10b981;">✓ Paid</span></div>
+            </div>
+            
+            <div style="background: #fef3c7; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <h3>Customer Information</h3>
+                <p><strong>Name:</strong> ${currentOrder.customer_name}<br>
+                <strong>Email:</strong> ${currentOrder.customer_email}<br>
+                <strong>Address:</strong> ${currentOrder.customer_address}<br>
+                <strong>Payment Method:</strong> ${currentOrder.payment_method}</p>
+            </div>
+            
+            <h3>Order Items</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                <thead><tr style="background: #f97316; color: white;"><th style="padding: 10px; text-align: left;">Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                <tbody>
+                    ${currentOrder.items.map(item => `
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 8px;">${item.name}</td>
+                            <td style="padding: 8px; text-align: center;">${item.quantity}</td>
+                            <td style="padding: 8px; text-align: right;">₹${item.price.toLocaleString()}</td>
+                            <td style="padding: 8px; text-align: right;">₹${(item.price * item.quantity).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr><td colspan="3" style="padding: 8px; text-align: right;"><strong>Subtotal:</strong></td><td style="padding: 8px; text-align: right;">₹${currentOrder.subtotal.toLocaleString()}</td></tr>
+                    ${currentOrder.discount > 0 ? `<tr><td colspan="3" style="padding: 8px; text-align: right;"><strong>Discount:</strong></td><td style="padding: 8px; text-align: right; color: #10b981;">-₹${currentOrder.discount.toLocaleString()}</td></tr>` : ''}
+                    <tr style="border-top: 2px solid #f97316;"><td colspan="3" style="padding: 8px; text-align: right;"><strong>Grand Total:</strong></td><td style="padding: 8px; text-align: right;"><strong style="color:#f97316;">₹${currentOrder.total.toLocaleString()}</strong></td></tr>
+                </tfoot>
+            </table>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999;">
+                <p>Thank you for shopping with QuickCart Pro!</p>
+                <p>support@quickcart.com | +91-123-456-7890</p>
+            </div>
+        </div>
+    `;
+    
+    const element = document.createElement('div');
+    element.innerHTML = pdfHTML;
+    document.body.appendChild(element);
+    
+    html2pdf().from(element).set({
+        filename: `Receipt_${currentOrder.id}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    }).save().then(() => {
+        document.body.removeChild(element);
+        showToast("✅ Receipt Downloaded Successfully!");
+    });
+}
+
+// ============ LOAD ORDERS ============
+async function loadOrders() {
+    const res = await fetch('/api/get_orders');
+    const ordersList = await res.json();
+    const container = document.getElementById('ordersList');
+    
+    if (ordersList.length === 0) {
+        container.innerHTML = `
+            <div class="col-md-8 text-center text-muted py-5">
+                <i class="fas fa-history fa-4x mb-3 opacity-50"></i>
+                <h4>No orders yet</h4>
+                <p>Start shopping to see your orders here!</p>
+                <button class="btn btn-warning rounded-pill px-4" onclick="switchTab('home')">Start Shopping</button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = '<div class="col-md-8">' + ordersList.map(order => `
+        <div class="card mb-3">
+            <div class="card-header bg-warning">
+                <strong><i class="fas fa-receipt"></i> Order #${order.id}</strong>
+                <span class="float-end">₹${order.total.toLocaleString()}</span>
+            </div>
+            <div class="card-body">
+                <small>Date: ${order.date}</small>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-success" onclick="viewOrderReceipt('${order.id}')">
+                        <i class="fas fa-eye"></i> View Receipt
+                    </button>
+                    <button class="btn btn-sm btn-primary ms-2" onclick="downloadOrderReceipt('${order.id}')">
+                        <i class="fas fa-download"></i> Download Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('') + '</div>';
+}
+
+async function viewOrderReceipt(orderId) {
+    const res = await fetch('/api/get_orders');
+    const ordersList = await res.json();
+    const order = ordersList.find(o => o.id === orderId);
+    if (order) {
+        showReceipt(order);
+        switchTab('receipt');
+    }
+}
+
+async function downloadOrderReceipt(orderId) {
+    const res = await fetch('/api/get_orders');
+    const ordersList = await res.json();
+    const order = ordersList.find(o => o.id === orderId);
+    if (order) {
+        currentOrder = order;
+        downloadReceipt();
+    }
+}
+
+// ============ UTILITY FUNCTIONS ============
+function switchTab(tabName) {
+    document.querySelectorAll('.page-container').forEach(page => page.classList.remove('active-page'));
+    document.getElementById(tabName + 'Page').classList.add('active-page');
+    
+    document.querySelectorAll('.nav-link').forEach(tab => tab.classList.remove('active-tab'));
+    const activeTab = document.getElementById(tabName + 'Tab');
+    if (activeTab) activeTab.classList.add('active-tab');
+    
+    if (tabName === 'orders') loadOrders();
+    if (tabName === 'home') { currentPage = 1; loadProducts(); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function continueShopping() {
+    switchTab('home');
+    showToast("Continue shopping!");
+}
+
+function viewOrders() {
+    switchTab('orders');
+}
+
+function showToast(message, isError = false) {
+    const toast = document.getElementById('toastMsg');
+    toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-2"></i> ${message}`;
+    toast.style.background = isError ? '#ef4444' : '#10b981';
+    toast.classList.add('show-toast');
+    setTimeout(() => toast.classList.remove('show-toast'), 2500);
+}
+
+// ============ EVENT LISTENERS ============
+document.getElementById('searchInput')?.addEventListener('keyup', () => { currentPage = 1; loadProducts(); });
+document.getElementById('categoryFilter')?.addEventListener('change', () => { currentPage = 1; loadProducts(); });
+document.getElementById('cartIconBtn')?.addEventListener('click', () => document.getElementById('cartSidebar').classList.add('open'));
+document.getElementById('closeCartBtn')?.addEventListener('click', () => document.getElementById('cartSidebar').classList.remove('open'));
+document.getElementById('cartOverlay')?.addEventListener('click', () => document.getElementById('cartSidebar').classList.remove('open'));
+document.getElementById('checkoutBtn')?.addEventListener('click', () => {
+    document.getElementById('cartSidebar').classList.remove('open');
+    switchTab('checkout');
+});
+
+// Back to top
+window.addEventListener('scroll', () => {
+    const backBtn = document.getElementById('backToTopBtn');
+    if (backBtn) backBtn.style.display = window.scrollY > 400 ? 'flex' : 'none';
+});
+document.getElementById('backToTopBtn')?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+// Initialize
+loadCart();
+loadProducts();
+
+// Make functions global
+window.switchTab = switchTab;
+window.addToCart = addToCart;
+window.updateQuantity = updateQuantity;
+window.removeFromCart = removeFromCart;
+window.loadMore = loadMore;
+window.downloadReceipt = downloadReceipt;
+window.continueShopping = continueShopping;
+window.viewOrders = viewOrders;
+window.viewOrderReceipt = viewOrderReceipt;
+window.downloadOrderReceipt = downloadOrderReceipt;
+</script>
+</body>
+</html>
