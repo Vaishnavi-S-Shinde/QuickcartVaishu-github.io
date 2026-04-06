@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>QuickCart Ultra Pro | Complete E-Commerce System</title>
+    <!-- Bootstrap 5 + Icons + Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); transition: all 0.3s; }
+        :root {
+            --bg-primary: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a;
+            --text-secondary: #475569; --border-light: #e2e8f0;
+            --navbar-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --hero-gradient: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%);
+        }
+        body.dark {
+            --bg-primary: #0f172a; --bg-card: #1e293b; --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1; --border-light: #334155;
+        }
+        .navbar { background: var(--navbar-bg); padding: 14px 0; }
+        .navbar-brand { font-size: 1.9rem; font-weight: 800; background: linear-gradient(135deg, #facc15, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .nav-link { color: #e2e8f0 !important; cursor: pointer; transition: 0.2s; }
+        .nav-link:hover { color: #f97316 !important; transform: translateY(-2px); }
+        .hero-section { background: var(--hero-gradient); color: white; padding: 80px 0; }
+        .hero-title { font-size: 3rem; font-weight: 800; }
+        .product-card { background: var(--bg-card); border-radius: 24px; overflow: hidden; transition: all 0.3s; border: 1px solid var(--border-light); height: 100%; cursor: pointer; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 30px -12px rgba(0,0,0,0.2); }
+        .product-img { height: 200px; background: linear-gradient(145deg, #f1f5f9, #e6edf4); display: flex; align-items: center; justify-content: center; position: relative; }
+        .product-img i { font-size: 4rem; color: #f97316; }
+        .product-badge { position: absolute; top: 12px; right: 12px; background: #ef4444; color: white; border-radius: 20px; padding: 4px 12px; font-size: 0.7rem; font-weight: 700; }
+        .wishlist-btn { position: absolute; top: 12px; left: 12px; background: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; transition: 0.2s; }
+        .wishlist-btn i { font-size: 1rem; color: #ef4444; }
+        .wishlist-btn.active i { color: #ef4444; }
+        .rating { color: #ffc107; font-size: 0.85rem; }
+        .btn-add-cart { background: linear-gradient(95deg, #1e293b, #0f172a); border: none; padding: 10px; border-radius: 40px; font-weight: 600; color: white; width: 100%; }
+        body.dark .btn-add-cart { background: linear-gradient(95deg, #f97316, #ef4444); }
+        .cart-sidebar { position: fixed; top: 0; right: -450px; width: 420px; height: 100vh; background: var(--bg-card); z-index: 1050; transition: right 0.3s; display: flex; flex-direction: column; border-left: 1px solid var(--border-light); }
+        .cart-sidebar.open { right: 0; }
+        .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; display: none; backdrop-filter: blur(3px); }
+        .cart-overlay.show { display: block; }
+        .orders-page, .checkout-page, .receipt-page, .account-page { display: none; padding: 60px 0; min-height: 70vh; }
+        .orders-page.active, .checkout-page.active, .receipt-page.active, .account-page.active, .home-page.active { display: block; }
+        .home-page { display: block; }
+        .order-card { background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border-light); margin-bottom: 20px; overflow: hidden; }
+        .order-header { background: linear-gradient(135deg, #f97316, #ef4444); color: white; padding: 15px 20px; display: flex; justify-content: space-between; }
+        .theme-toggle { background: rgba(255,255,255,0.1); border-radius: 50px; padding: 6px 12px; cursor: pointer; }
+        .cart-count-badge { background: #ef4444; border-radius: 30px; padding: 2px 8px; font-size: 11px; margin-left: 5px; }
+        .toast-custom { position: fixed; bottom: 25px; left: 25px; z-index: 1100; background: #10b981; color: white; padding: 12px 24px; border-radius: 60px; transform: translateX(-120%); transition: transform 0.3s; }
+        .toast-custom.show-toast { transform: translateX(0); }
+        .back-to-top { position: fixed; bottom: 24px; right: 24px; background: #f97316; border-radius: 50%; width: 48px; height: 48px; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 99; }
+        .chat-widget { position: fixed; bottom: 90px; right: 24px; width: 300px; background: var(--bg-card); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 100; display: none; border: 1px solid var(--border-light); }
+        .chat-widget.open { display: block; }
+        .chat-header { background: linear-gradient(135deg, #f97316, #ef4444); color: white; padding: 12px; border-radius: 20px 20px 0 0; cursor: pointer; font-weight: 600; }
+        .chat-body { height: 250px; overflow-y: auto; padding: 12px; }
+        .chat-input { display: flex; padding: 12px; border-top: 1px solid var(--border-light); }
+        .chat-input input { flex: 1; padding: 8px; border-radius: 20px; border: 1px solid var(--border-light); background: var(--bg-primary); color: var(--text-primary); }
+        .chat-bubble { margin-bottom: 10px; padding: 8px 12px; border-radius: 18px; max-width: 85%; word-wrap: break-word; }
+        .chat-bubble.user { background: #f97316; color: white; margin-left: auto; text-align: right; }
+        .chat-bubble.bot { background: var(--border-light); color: var(--text-primary); }
+        .delivery-badge { background: #ffedd5; color: #b45309; }
+        .tracking-step { transition: 0.2s; }
+        @media (max-width: 768px) { .cart-sidebar { width: 100%; right: -100%; } .hero-title { font-size: 1.8rem; } .chat-widget { width: 260px; right: 10px; } }
+        .btn-warning-custom { background: #f97316; border: none; }
+        .order-status { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 30px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#"><i class="fas fa-bolt"></i> QuickCart Pro</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav ms-auto align-items-center gap-2">
+                <li class="nav-item"><a class="nav-link" onclick="showPage('home')"><i class="fas fa-home"></i> Home</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showPage('orders')"><i class="fas fa-box"></i> Orders</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showPage('account')"><i class="fas fa-user"></i> Account</a></li>
+                <li class="nav-item position-relative">
+                    <a class="nav-link" id="cartIconBtn" style="cursor: pointer;">
+                        <i class="fas fa-shopping-cart"></i> Cart
+                        <span id="cartGlobalBadge" class="cart-count-badge">0</span>
+                    </a>
+                </li>
+                <li class="nav-item"><div class="theme-toggle" id="darkModeToggle"><i class="fas fa-moon text-white"></i> <span class="text-white">Dark</span></div></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Home Page -->
+<div id="homePage" class="home-page active">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="hero-title">Level Up Your <span style="color: #ffd966;">Shopping</span> Experience</h1>
+                    <p class="lead">Premium products, lightning-fast delivery, and exclusive deals.</p>
+                    <button class="btn btn-light rounded-pill px-4 py-2 fw-bold" onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})">Explore Now →</button>
+                </div>
+                <div class="col-md-6 text-center"><i class="fas fa-rocket" style="font-size: 5rem;"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="row g-3 align-items-center mb-4">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="🔍 Search products...">
+            </div>
+            <div class="col-md-3">
+                <select id="categoryFilter" class="form-select rounded-pill">
+                    <option value="all">All Categories</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Furniture">Furniture</option>
+                    <option value="Home & Living">Home & Living</option>
+                    <option value="Accessories">Accessories</option>
+                </select>
+            </div>
+            <div class="col-md-5 text-end">
+                <div class="badge bg-warning text-dark p-2 fs-6">⚡ Order within <span id="timerCountdown">59:59</span> for same-day delivery!</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-3" id="productsSection">
+        <h2 class="text-center mb-4 fw-bold" style="background: linear-gradient(135deg, #f97316, #dc2626); -webkit-background-clip: text; background-clip: text; color: transparent;">✨ Trending Now</h2>
+        <div class="row g-4" id="productGrid"></div>
+    </div>
+</div>
+
+<!-- Orders Page -->
+<div id="ordersPage" class="orders-page">
+    <div class="container">
+        <h2 class="text-center mb-4 fw-bold">📦 My Orders</h2>
+        <div id="ordersList" class="row justify-content-center"></div>
+    </div>
+</div>
+
+<!-- Account Page -->
+<div id="accountPage" class="account-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card bg-transparent border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-circle fa-4x mb-3" style="color: #f97316;"></i>
+                        <h3 id="userDisplayName">Guest User</h3>
+                        <p id="userDisplayEmail" class="text-secondary">Not logged in</p>
+                        <button class="btn btn-warning rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="fas fa-sign-in-alt"></i> Login / Sign Up</button>
+                        <button class="btn btn-outline-secondary rounded-pill px-4 mt-2" id="logoutBtn" style="display: none;" onclick="logout()">Logout</button>
+                        <div class="mt-4 p-3 rounded-3" style="background: var(--bg-card); border: 1px solid var(--border-light);"><strong>❤️ Wishlist (<span id="wishlistCount">0</span>)</strong>
+                            <div id="wishlistItems" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checkout Page -->
+<div id="checkoutPage" class="checkout-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow border-0" style="background: var(--bg-card);">
+                    <div class="card-body p-4">
+                        <h3 class="mb-4"><i class="fas fa-lock"></i> Secure Checkout</h3>
+                        <form id="checkoutForm">
+                            <input type="text" id="fullName" class="form-control mb-3" placeholder="Full Name" required>
+                            <input type="email" id="emailAddress" class="form-control mb-3" placeholder="Email" required>
+                            <textarea id="shippingAddress" class="form-control mb-3" rows="2" placeholder="Shipping Address" required></textarea>
+                            <select id="paymentMethod" class="form-select mb-3">
+                                <option>Credit Card</option><option>UPI</option><option>Cash on Delivery</option>
+                            </select>
+                            <div class="mb-3">
+                                <input type="text" id="couponCode" class="form-control" placeholder="Coupon Code (SAVE10, WELCOME15, FREESHIP)">
+                                <small id="couponMsg" class="text-success"></small>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold">Place Order</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Receipt Page -->
+<div id="receiptPage" class="receipt-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div id="receiptContent" class="card shadow border-0" style="background: var(--bg-card);"></div>
+                <div class="text-center mt-3"><button class="btn btn-primary rounded-pill" onclick="downloadReceiptPDF()"><i class="fas fa-download"></i> Download PDF</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--bg-card);">
+            <div class="modal-header"><h5 class="modal-title">Login / Sign Up</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="text" id="loginName" class="form-control mb-2" placeholder="Name">
+                <input type="email" id="loginEmail" class="form-control mb-2" placeholder="Email">
+                <button class="btn btn-warning w-100" onclick="loginUser()">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="p-3 border-bottom d-flex justify-content-between"><h4><i class="fas fa-bag-shopping"></i> Cart</h4><button id="closeCartBtn" class="btn-close"></button></div>
+    <div class="flex-grow-1 overflow-auto p-3" id="cartItemsList"></div>
+    <div class="p-3 border-top"><div class="d-flex justify-content-between fw-bold fs-5"><span>Total:</span><span id="cartTotalAmount">₹0</span></div>
+    <button id="checkoutBtn" class="btn btn-warning w-100 rounded-pill mt-2">Proceed to Checkout</button></div>
+</div>
+
+<!-- Chat Widget -->
+<div id="chatWidget" class="chat-widget">
+    <div class="chat-header" onclick="toggleChat()"><i class="fas fa-comment-dots"></i> Quick Support</div>
+    <div class="chat-body" id="chatBody"><div class="chat-bubble bot">👋 Hi! Need help? Ask me about orders, coupons, or returns!</div></div>
+    <div class="chat-input"><input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendChatMessage()"><button class="btn btn-sm btn-warning ms-1" onclick="sendChatMessage()">Send</button></div>
+</div>
+<div style="position: fixed; bottom: 24px; right: 24px; z-index: 99;"><button class="btn btn-warning rounded-circle" style="width: 50px; height: 50px;" onclick="toggleChat()"><i class="fas fa-headset"></i></button></div>
+
+<div id="toastMsg" class="toast-custom"></div>
+<div class="back-to-top" id="backToTopBtn"><i class="fas fa-arrow-up text-white"></i></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============ PRODUCT DATABASE ============
+const productsDB = [
+    { id: 1, name: "HyperX Wireless Headphones", category: "Electronics", price: 3499, desc: "50hr battery, noise cancellation", icon: "headphones", badge: "Bestseller", rating: 4.5, stock: 15 },
+    { id: 2, name: "Urban Street Hoodie", category: "Clothing", price: 1899, desc: "Cotton blend oversized", icon: "tshirt", badge: "Trending", rating: 4.2, stock: 8 },
+    { id: 3, name: "Minimalist Wood Desk", category: "Furniture", price: 7999, desc: "Solid sheesham wood", icon: "couch", badge: "Eco", rating: 4.8, stock: 5 },
+    { id: 4, name: "Smart Fitness Watch", category: "Electronics", price: 4599, desc: "Heart rate, GPS", icon: "clock", badge: "New", rating: 4.3, stock: 12 },
+    { id: 5, name: "Ceramic Coffee Set", category: "Home & Living", price: 1299, desc: "Handcrafted set of 4", icon: "mug-hot", badge: "Handmade", rating: 4.6, stock: 20 },
+    { id: 6, name: "Gaming Keyboard", category: "Electronics", price: 5999, desc: "RGB mechanical", icon: "keyboard", badge: "Pro", rating: 4.7, stock: 7 },
+    { id: 7, name: "Leather Office Bag", category: "Accessories", price: 3299, desc: "Genuine leather", icon: "bag-shopping", badge: "Premium", rating: 4.4, stock: 10 },
+    { id: 8, name: "Aromatic Diffuser", category: "Home & Living", price: 999, desc: "Ultrasonic LED", icon: "spa", badge: "Relax", rating: 4.1, stock: 25 }
+];
+
+// ============ STATE ============
+let cart = [];
+let orders = [];
+let wishlist = [];
+let currentUser = null;
+let appliedCoupon = null;
+const coupons = { "SAVE10": 10, "WELCOME15": 15, "FREESHIP": 0 };
+
+// ============ PERSISTENCE ============
+function loadData() {
+    try {
+        if(localStorage.getItem('quickcart_cart')) cart = JSON.parse(localStorage.getItem('quickcart_cart'));
+        if(localStorage.getItem('quickcart_orders')) orders = JSON.parse(localStorage.getItem('quickcart_orders'));
+        if(localStorage.getItem('quickcart_wishlist')) wishlist = JSON.parse(localStorage.getItem('quickcart_wishlist'));
+        if(localStorage.getItem('quickcart_user')) currentUser = JSON.parse(localStorage.getItem('quickcart_user'));
+    } catch(e) { console.warn(e); }
+    updateUI();
+    renderOrders();
+    renderProducts();
+    updateUserUI();
+}
+function saveAll() {
+    localStorage.setItem('quickcart_cart', JSON.stringify(cart));
+    localStorage.setItem('quickcart_orders', JSON.stringify(orders));
+    localStorage.setItem('quickcart_wishlist', JSON.stringify(wishlist));
+    if(currentUser) localStorage.setItem('quickcart_user', JSON.stringify(currentUser));
+    updateUI();
+}
+function updateUI() {
+    const totalItems = cart.reduce((s,i)=> s + i.quantity, 0);
+    document.getElementById('cartGlobalBadge').innerText = totalItems;
+    updateCartUI();
+    updateWishlistUI();
+}
+
+// ============ RENDER PRODUCTS ============
+function renderProducts() {
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const category = document.getElementById('categoryFilter')?.value || 'all';
+    let filtered = productsDB.filter(p => (category === 'all' || p.category === category) && (p.name.toLowerCase().includes(searchTerm) || p.desc.toLowerCase().includes(searchTerm)));
+    const grid = document.getElementById('productGrid');
+    if(!grid) return;
+    grid.innerHTML = filtered.map(prod => `
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="product-card">
+                <div class="product-img">
+                    <div class="product-badge">${prod.badge}</div>
+                    <button class="wishlist-btn ${wishlist.includes(prod.id) ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${prod.id})"><i class="fas fa-heart"></i></button>
+                    <i class="fas fa-${prod.icon}"></i>
+                </div>
+                <div class="p-3">
+                    <div class="rating">${'★'.repeat(Math.floor(prod.rating))}${'☆'.repeat(5-Math.floor(prod.rating))} (${prod.rating})</div>
+                    <h6 class="fw-bold mt-1">${prod.name}</h6>
+                    <small class="text-secondary">${prod.desc}</small>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span class="fw-bold fs-5" style="color:#f97316;">₹${prod.price}</span>
+                        <span class="text-decoration-line-through text-secondary">₹${Math.round(prod.price*1.4)}</span>
+                    </div>
+                    <div class="mt-2"><small class="${prod.stock > 0 ? 'text-success' : 'text-danger'}">${prod.stock > 0 ? '✅ In Stock' : '❌ Out of Stock'}</small></div>
+                    <button class="btn-add-cart mt-2" ${prod.stock === 0 ? 'disabled' : ''} onclick="addToCart(${prod.id}, '${prod.name}', ${prod.price})"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+                    <button class="btn btn-sm btn-outline-secondary w-100 mt-1" onclick="shareProduct('${prod.name}', ${prod.price})"><i class="fab fa-whatsapp"></i> Share</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+function toggleWishlist(id) {
+    if(wishlist.includes(id)) wishlist = wishlist.filter(i=> i !== id);
+    else wishlist.push(id);
+    saveAll();
+    renderProducts();
+    showToast(wishlist.includes(id) ? "❤️ Added to wishlist" : "Removed from wishlist", false);
+}
+function shareProduct(name, price) { window.open(`https://wa.me/?text=✨ Check out ${name} for just ₹${price} on QuickCart!`, '_blank'); }
+
+// ============ CART ============
+function addToCart(id, name, price) {
+    let existing = cart.find(i=> i.id === id);
+    if(existing) existing.quantity++;
+    else cart.push({id, name, price, quantity: 1});
+    saveAll();
+    showToast(`${name} added to cart!`, false);
+}
+function updateCartUI() {
+    const container = document.getElementById('cartItemsList');
+    if(!container) return;
+    if(cart.length === 0) { container.innerHTML = '<div class="text-center text-muted">Cart is empty</div>'; document.getElementById('cartTotalAmount').innerText = '₹0'; return; }
+    let total = 0;
+    let html = '';
+    cart.forEach(item => { total += item.price * item.quantity;
+        html += `<div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2"><div><strong>${item.name}</strong><br><small>₹${item.price}</small></div><div><button class="btn btn-sm btn-outline-secondary" onclick="updateQty(${item.id}, -1)">-</button> <span class="mx-2">${item.quantity}</span> <button class="btn btn-sm btn-outline-secondary" onclick="updateQty(${item.id}, 1)">+</button> <button class="btn btn-sm btn-danger ms-2" onclick="removeCartItem(${item.id})"><i class="fas fa-trash"></i></button></div><div>₹${item.price * item.quantity}</div></div>`;
+    });
+    container.innerHTML = html;
+    document.getElementById('cartTotalAmount').innerText = `₹${total}`;
+}
+function updateQty(id, delta) { let idx = cart.findIndex(i=> i.id===id); if(idx!==-1) { cart[idx].quantity += delta; if(cart[idx].quantity<=0) cart.splice(idx,1); saveAll(); } }
+function removeCartItem(id) { cart = cart.filter(i=> i.id !== id); saveAll(); showToast("Item removed", false); }
+
+// ============ CHECKOUT & ORDERS ============
+function applyCoupon() {
+    let code = document.getElementById('couponCode')?.value.toUpperCase();
+    if(coupons[code]) { appliedCoupon = code; document.getElementById('couponMsg').innerText = `✅ Coupon ${code} applied!`; return true; }
+    else if(code) { document.getElementById('couponMsg').innerText = '❌ Invalid coupon'; appliedCoupon = null; return false; }
+    return false;
+}
+document.getElementById('checkoutForm')?.addEventListener('submit', function(e) { e.preventDefault(); applyCoupon(); placeOrderFromCheckout(); });
+function placeOrderFromCheckout() {
+    if(cart.length===0) { showToast("Cart is empty!", true); return; }
+    let total = cart.reduce((s,i)=> s + i.price*i.quantity, 0);
+    let discountAmount = 0;
+    if(appliedCoupon && coupons[appliedCoupon]) {
+        if(appliedCoupon === 'FREESHIP') discountAmount = 50;
+        else discountAmount = total * coupons[appliedCoupon] / 100;
+    }
+    let finalTotal = total - discountAmount;
+    if(finalTotal < 0) finalTotal = 0;
+    const orderId = 'ORD' + Date.now();
+    const newOrder = { 
+        id: orderId, date: new Date().toLocaleString(), items: [...cart], 
+        subtotal: total, discount: discountAmount, shipping: 0, total: finalTotal, 
+        status: 'Confirmed', deliveryStatus: 'Processing', 
+        customer: { name: document.getElementById('fullName').value, email: document.getElementById('emailAddress').value, 
+                    address: document.getElementById('shippingAddress').value, payment: document.getElementById('paymentMethod').value } 
+    };
+    orders.unshift(newOrder);
+    saveAll();
+    cart = [];
+    saveAll();
+    showReceipt(newOrder);
+    showPage('receipt');
+    showToast(`🎉 Order placed! ID: ${orderId}`, false);
+}
+function showReceipt(order) {
+    let html = `<div class="card-body p-4"><div class="text-center"><i class="fas fa-receipt fa-3x text-warning"></i><h3>Payment Receipt</h3><p>Order #${order.id}</p><p>${order.date}</p></div><hr><div><strong>${order.customer.name}</strong><br>${order.customer.email}<br>${order.customer.address}</div><hr><h5>Items:</h5>`;
+    order.items.forEach(i => { html += `<div class="d-flex justify-content-between"><span>${i.name} x ${i.quantity}</span><span>₹${i.price * i.quantity}</span></div>`; });
+    html += `<hr><div class="d-flex justify-content-between"><strong>Subtotal:</strong><span>₹${order.subtotal}</span></div><div class="d-flex justify-content-between"><strong>Discount:</strong><span>-₹${order.discount}</span></div><div class="d-flex justify-content-between fw-bold fs-5"><span>Total Paid:</span><span>₹${order.total}</span></div><div class="text-success mt-2">✅ Payment: ${order.customer.payment}</div></div>`;
+    document.getElementById('receiptContent').innerHTML = html;
+}
+function downloadReceiptPDF() { const element = document.getElementById('receiptContent'); if(element) html2pdf().from(element).save('QuickCart_Receipt.pdf'); }
+function renderOrders() {
+    const container = document.getElementById('ordersList');
+    if(!container) return;
+    if(orders.length===0) { container.innerHTML = '<div class="text-center text-muted">No orders yet</div>'; return; }
+    container.innerHTML = orders.map(order => `<div class="col-md-8"><div class="order-card"><div class="order-header"><div><strong>#${order.id}</strong><br><small>${order.date}</small></div><div><span class="order-status">${order.status}</span><span class="order-status ms-2">${order.deliveryStatus}</span></div></div><div class="p-3">${order.items.map(i=> `<div class="d-flex justify-content-between"><span>${i.name} x${i.quantity}</span><span>₹${i.price*i.quantity}</span></div>`).join('')}<div class="border-top mt-2 pt-2 text-end fw-bold">Total: ₹${order.total}</div><div class="mt-2 small text-secondary">🚚 Delivery ETA: 3-5 business days</div></div></div></div>`).join('');
+}
+
+// ============ AUTH ============
+function loginUser() {
+    let name = document.getElementById('loginName').value.trim();
+    let email = document.getElementById('loginEmail').value.trim();
+    if(name && email) { currentUser = { name, email }; saveAll(); updateUserUI(); bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide(); showToast(`Welcome ${name}!`, false); }
+    else showToast("Please enter name and email", true);
+}
+function logout() { currentUser = null; localStorage.removeItem('quickcart_user'); updateUserUI(); showToast("Logged out successfully", false); }
+function updateUserUI() {
+    if(currentUser) { document.getElementById('userDisplayName').innerText = currentUser.name; document.getElementById('userDisplayEmail').innerText = currentUser.email; document.getElementById('logoutBtn').style.display = 'inline-block'; }
+    else { document.getElementById('userDisplayName').innerText = 'Guest User'; document.getElementById('userDisplayEmail').innerText = 'Not logged in'; document.getElementById('logoutBtn').style.display = 'none'; }
+}
+function updateWishlistUI() { 
+    document.getElementById('wishlistCount').innerText = wishlist.length; 
+    let items = wishlist.map(id => productsDB.find(p=> p.id===id)).filter(p=>p).map(p=> `<div class="d-flex justify-content-between align-items-center mb-2"><span>${p.name}</span><button class="btn btn-sm btn-outline-danger" onclick="toggleWishlist(${p.id})">Remove</button></div>`).join(''); 
+    document.getElementById('wishlistItems').innerHTML = items || '<small>No items in wishlist</small>'; 
+}
+
+// ============ DELIVERY TIMER ============
+let timerInterval;
+function startTimer() { let time = 3599; timerInterval = setInterval(() => { let mins = Math.floor(time/60); let secs = time%60; if(document.getElementById('timerCountdown')) document.getElementById('timerCountdown').innerText = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`; if(time<=0) clearInterval(timerInterval); time--; }, 1000); }
+startTimer();
+
+// ============ CHAT BOT ============
+function toggleChat() { document.getElementById('chatWidget').classList.toggle('open'); }
+function sendChatMessage() { 
+    let input = document.getElementById('chatInput'); 
+    let msg = input.value.trim(); 
+    if(!msg) return; 
+    let body = document.getElementById('chatBody'); 
+    body.innerHTML += `<div class="chat-bubble user">${escapeHtml(msg)}</div>`; 
+    input.value = ''; 
+    setTimeout(() => { 
+        let reply = "Thank you! Our support team will get back to you soon."; 
+        let lower = msg.toLowerCase();
+        if(lower.includes('order')) reply = "You can track your orders in the 'Orders' section. Use your order ID!";
+        else if(lower.includes('return')) reply = "We offer 60 days hassle-free returns! Contact support for pickup.";
+        else if(lower.includes('coupon')) reply = "Active coupons: SAVE10 (10% off), WELCOME15 (15% off), FREESHIP (₹50 off shipping).";
+        else if(lower.includes('delivery')) reply = "Same-day delivery if ordered before 7 PM! Check the countdown timer.";
+        body.innerHTML += `<div class="chat-bubble bot">${reply}</div>`; 
+        body.scrollTop = body.scrollHeight; 
+    }, 400); 
+    body.scrollTop = body.scrollHeight; 
+}
+function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+// ============ NAVIGATION & UTILS ============
+function showPage(page) {
+    ['homePage','ordersPage','checkoutPage','receiptPage','accountPage'].forEach(p => document.getElementById(p).classList.remove('active'));
+    document.getElementById(page+'Page').classList.add('active');
+    if(page==='orders') renderOrders();
+    if(page==='home') renderProducts();
+    window.scrollTo(0,0);
+}
+function showToast(msg, isErr) { let t = document.getElementById('toastMsg'); t.innerHTML = `<i class="fas ${isErr ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`; t.style.background = isErr ? '#ef4444' : '#10b981'; t.classList.add('show-toast'); setTimeout(()=> t.classList.remove('show-toast'), 2500); }
+
+// ============ EVENT LISTENERS ============
+document.getElementById('searchInput')?.addEventListener('keyup', ()=> renderProducts());
+document.getElementById('categoryFilter')?.addEventListener('change', ()=> renderProducts());
+document.getElementById('cartIconBtn')?.addEventListener('click', ()=> document.getElementById('cartSidebar').classList.add('open'));
+document.getElementById('closeCartBtn')?.addEventListener('click', ()=> document.getElementById('cartSidebar').classList.remove('open'));
+document.getElementById('cartOverlay')?.addEventListener('click', ()=> document.getElementById('cartSidebar').classList.remove('open'));
+document.getElementById('checkoutBtn')?.addEventListener('click', ()=> { document.getElementById('cartSidebar').classList.remove('open'); showPage('checkout'); });
+document.getElementById('darkModeToggle')?.addEventListener('click', ()=> { document.body.classList.toggle('dark'); localStorage.setItem('darkMode', document.body.classList.contains('dark')); if(document.body.classList.contains('dark')) document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-sun"></i> Light'; else document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-moon"></i> Dark'; });
+if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+
+window.addEventListener('scroll', ()=> { let btn = document.getElementById('backToTopBtn'); if(btn) btn.style.display = window.scrollY > 400 ? 'flex' : 'none'; });
+document.getElementById('backToTopBtn')?.addEventListener('click', ()=> window.scrollTo(0,0));
+
+loadData();
+window.showPage = showPage;
+</script>
+</body>
+</html>

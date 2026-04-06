@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>QuickCart Pro | Payment Receipt & Order Tracking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-primary); transition: all 0.3s; }
+        :root {
+            --bg-primary: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a;
+            --text-secondary: #475569; --border-light: #e2e8f0;
+            --navbar-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+        }
+        body.dark {
+            --bg-primary: #0f172a; --bg-card: #1e293b; --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1; --border-light: #334155;
+        }
+        .navbar { background: var(--navbar-bg); padding: 14px 0; }
+        .navbar-brand { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #facc15, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .nav-link { color: #e2e8f0 !important; cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .nav-link:hover { color: #f97316 !important; transform: translateY(-2px); }
+        .nav-link.active-tab { color: #f97316 !important; border-bottom: 2px solid #f97316; }
+        .hero-section { background: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%); color: white; padding: 80px 0; }
+        .hero-title { font-size: 2.8rem; font-weight: 800; }
+        
+        .product-card { background: var(--bg-card); border-radius: 24px; overflow: hidden; transition: all 0.3s; border: 1px solid var(--border-light); height: 100%; cursor: pointer; }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 30px -12px rgba(0,0,0,0.2); }
+        .product-img { height: 220px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative; }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; }
+        .product-badge { position: absolute; top: 12px; right: 12px; background: #ef4444; color: white; border-radius: 20px; padding: 4px 12px; font-size: 0.7rem; font-weight: 700; z-index: 2; }
+        .wishlist-btn { position: absolute; top: 12px; left: 12px; background: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; transition: 0.2s; z-index: 2; }
+        .wishlist-btn i { font-size: 1rem; color: #ef4444; }
+        .wishlist-btn.active { background: #ef4444; }
+        .wishlist-btn.active i { color: white; }
+        .rating { color: #ffc107; font-size: 0.85rem; }
+        .btn-add-cart { background: linear-gradient(95deg, #1e293b, #0f172a); border: none; padding: 10px; border-radius: 40px; font-weight: 600; color: white; width: 100%; transition: all 0.3s; }
+        .btn-add-cart:hover { background: linear-gradient(95deg, #f97316, #ef4444); transform: scale(0.98); }
+        
+        .cart-sidebar { position: fixed; top: 0; right: -450px; width: 450px; height: 100vh; background: var(--bg-card); z-index: 1050; transition: right 0.3s; display: flex; flex-direction: column; border-left: 1px solid var(--border-light); }
+        .cart-sidebar.open { right: 0; }
+        .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040; display: none; backdrop-filter: blur(3px); }
+        .cart-overlay.show { display: block; }
+        
+        .page-container { display: none; padding: 50px 0; min-height: 60vh; }
+        .page-container.active-page { display: block; }
+        
+        /* Order Card Styling */
+        .order-card { background: var(--bg-card); border-radius: 20px; border: 1px solid var(--border-light); margin-bottom: 25px; overflow: hidden; transition: all 0.3s; }
+        .order-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -12px rgba(0,0,0,0.15); }
+        .order-header { background: linear-gradient(135deg, #f97316, #ef4444); color: white; padding: 18px 22px; display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; }
+        .order-status-badge { background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 600; }
+        
+        /* Tracking Progress */
+        .tracking-progress { padding: 20px; background: var(--bg-primary); border-radius: 16px; margin: 15px 0; }
+        .tracking-step { display: flex; align-items: center; margin-bottom: 15px; position: relative; }
+        .tracking-step .step-icon { width: 45px; height: 45px; border-radius: 50%; background: var(--border-light); display: flex; align-items: center; justify-content: center; margin-right: 15px; transition: all 0.3s; }
+        .tracking-step.completed .step-icon { background: var(--success); color: white; }
+        .tracking-step.active .step-icon { background: var(--warning); color: white; animation: pulse 1.5s infinite; }
+        .tracking-step .step-info { flex: 1; }
+        .tracking-step .step-title { font-weight: 600; margin-bottom: 3px; }
+        .tracking-step .step-desc { font-size: 0.8rem; color: var(--text-secondary); }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        /* Receipt Card */
+        .receipt-card { background: var(--bg-card); border-radius: 24px; border: 1px solid var(--border-light); overflow: hidden; }
+        .receipt-header { background: linear-gradient(135deg, #f97316, #ef4444); color: white; padding: 25px; text-align: center; }
+        .receipt-body { padding: 25px; }
+        
+        .account-card { background: var(--bg-card); border-radius: 24px; border: 1px solid var(--border-light); overflow: hidden; }
+        .account-header { background: linear-gradient(135deg, #f97316, #ef4444); padding: 30px; text-align: center; color: white; }
+        .account-avatar { width: 100px; height: 100px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; }
+        .account-avatar i { font-size: 3rem; color: #f97316; }
+        
+        .theme-toggle { background: rgba(255,255,255,0.1); border-radius: 50px; padding: 6px 12px; cursor: pointer; }
+        .cart-count-badge { background: #ef4444; border-radius: 30px; padding: 2px 8px; font-size: 11px; margin-left: 5px; }
+        .toast-custom { position: fixed; bottom: 25px; left: 25px; z-index: 1100; background: #10b981; color: white; padding: 12px 24px; border-radius: 60px; transform: translateX(-120%); transition: transform 0.3s; }
+        .toast-custom.show-toast { transform: translateX(0); }
+        .back-to-top { position: fixed; bottom: 24px; right: 24px; background: #f97316; border-radius: 50%; width: 48px; height: 48px; display: none; align-items: center; justify-content: center; cursor: pointer; z-index: 99; }
+        .delivery-timer { background: #f97316; color: #fff; padding: 8px 16px; border-radius: 40px; font-weight: 600; }
+        @media (max-width: 768px) { .cart-sidebar { width: 100%; right: -100%; } .hero-title { font-size: 1.8rem; } }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#" onclick="switchTab('home'); return false;"><i class="fas fa-bolt"></i> QuickCart Pro</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav ms-auto align-items-center gap-3">
+                <li class="nav-item"><a class="nav-link" id="homeTab" onclick="switchTab('home')"><i class="fas fa-home"></i> Home</a></li>
+                <li class="nav-item"><a class="nav-link" id="ordersTab" onclick="switchTab('orders')"><i class="fas fa-box"></i> Orders</a></li>
+                <li class="nav-item"><a class="nav-link" id="accountTab" onclick="switchTab('account')"><i class="fas fa-user"></i> Account</a></li>
+                <li class="nav-item position-relative">
+                    <a class="nav-link" id="cartIconBtn" style="cursor: pointer;">
+                        <i class="fas fa-shopping-cart"></i> Cart
+                        <span id="cartGlobalBadge" class="cart-count-badge">0</span>
+                    </a>
+                </li>
+                <li class="nav-item"><div class="theme-toggle" id="darkModeToggle"><i class="fas fa-moon"></i> <span>Dark</span></div></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="page-container active-page">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h1 class="hero-title">Level Up Your <span style="color: #ffd966;">Shopping</span> Experience</h1>
+                    <p class="lead">50+ Premium products with real images, lightning-fast delivery, and live order tracking.</p>
+                    <button class="btn btn-light rounded-pill px-4 py-2 fw-bold" onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})">Explore Now →</button>
+                </div>
+                <div class="col-md-5 text-center"><i class="fas fa-rocket" style="font-size: 5rem;"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="row g-3 align-items-center mb-4">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="🔍 Search 50+ products...">
+            </div>
+            <div class="col-md-3">
+                <select id="categoryFilter" class="form-select rounded-pill">
+                    <option value="all">All Categories (50)</option>
+                    <option value="Electronics">📱 Electronics (10)</option>
+                    <option value="Clothing">👕 Clothing (10)</option>
+                    <option value="Furniture">🪑 Furniture (10)</option>
+                    <option value="Home & Living">🏠 Home & Living (10)</option>
+                    <option value="Accessories">⌚ Accessories (10)</option>
+                </select>
+            </div>
+            <div class="col-md-5 text-end">
+                <div class="delivery-timer d-inline-block">⚡ Order within <span id="timerCountdown">59:59</span> for same-day delivery!</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-3" id="productsSection">
+        <h2 class="text-center mb-4 fw-bold" style="background: linear-gradient(135deg, #f97316, #dc2626); -webkit-background-clip: text; background-clip: text; color: transparent;">✨ Premium Products Collection</h2>
+        <div class="row g-4" id="productGrid"></div>
+    </div>
+</div>
+
+<!-- ORDERS PAGE with Payment Receipt -->
+<div id="ordersPage" class="page-container">
+    <div class="container">
+        <h2 class="text-center mb-4 fw-bold" style="background: linear-gradient(135deg, #f97316, #dc2626); -webkit-background-clip: text; background-clip: text; color: transparent;">📄 Payment Receipts</h2>
+        <div id="ordersList" class="row justify-content-center"></div>
+    </div>
+</div>
+
+<!-- ACCOUNT PAGE -->
+<div id="accountPage" class="page-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="account-card">
+                    <div class="account-header">
+                        <div class="account-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <h3 id="userDisplayName">Guest User</h3>
+                        <p id="userDisplayEmail" class="opacity-75 mb-0">Not logged in</p>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-center mb-4">
+                            <button class="btn btn-warning rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="fas fa-sign-in-alt"></i> Login / Sign Up</button>
+                            <button class="btn btn-outline-secondary rounded-pill px-4 mt-2" id="logoutBtn" style="display: none;" onclick="logoutUser()">Logout</button>
+                        </div>
+                        <div class="border-top pt-4">
+                            <h5 class="mb-3"><i class="fas fa-heart text-danger"></i> My Wishlist (<span id="wishlistCount">0</span>)</h5>
+                            <div id="wishlistItems" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CHECKOUT PAGE -->
+<div id="checkoutPage" class="page-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-transparent border-0">
+                    <div class="card-body p-4" style="background: var(--bg-card); border-radius: 28px;">
+                        <h3 class="mb-4">Secure Checkout</h3>
+                        <form id="checkoutForm">
+                            <input type="text" id="fullName" class="form-control mb-3" placeholder="Full Name" required>
+                            <input type="email" id="emailAddress" class="form-control mb-3" placeholder="Email" required>
+                            <textarea id="shippingAddress" class="form-control mb-3" rows="2" placeholder="Shipping Address" required></textarea>
+                            <select id="paymentMethod" class="form-select mb-3">
+                                <option>Credit Card</option><option>UPI</option><option>Cash on Delivery</option>
+                            </select>
+                            <div class="mb-3">
+                                <input type="text" id="couponCode" class="form-control" placeholder="Coupon Code (SAVE10, WELCOME15, FREESHIP)">
+                                <small id="couponMsg" class="text-success"></small>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 fw-bold">Place Order</button>
+                            <button type="button" class="btn btn-outline-secondary w-100 rounded-pill py-2 mt-2" onclick="switchTab('home')">← Back to Shop</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ORDER CONFIRMATION PAGE -->
+<div id="confirmationPage" class="page-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="receipt-card">
+                    <div class="receipt-header">
+                        <i class="fas fa-check-circle fa-3x mb-2"></i>
+                        <h2>Order Confirmed! 🎉</h2>
+                        <p>Thank you for your purchase</p>
+                    </div>
+                    <div class="receipt-body">
+                        <div id="confirmationDetails"></div>
+                        <div class="text-center mt-4">
+                            <button class="btn btn-warning rounded-pill px-4" onclick="switchTab('orders')"><i class="fas fa-file-invoice"></i> View Payment Receipt</button>
+                            <button class="btn btn-outline-secondary rounded-pill px-4 ms-2" onclick="switchTab('home')">Continue Shopping</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background: var(--bg-card);">
+            <div class="modal-header"><h5 class="modal-title">Login / Sign Up</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="text" id="loginName" class="form-control mb-2" placeholder="Name">
+                <input type="email" id="loginEmail" class="form-control mb-2" placeholder="Email">
+                <button class="btn btn-warning w-100" onclick="loginUser()">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="p-3 border-bottom d-flex justify-content-between"><h4><i class="fas fa-bag-shopping"></i> Your Cart</h4><button id="closeCartBtn" class="btn-close"></button></div>
+    <div class="flex-grow-1 overflow-auto p-3" id="cartItemsList"><div class="text-center text-muted mt-5">Cart is empty ✨</div></div>
+    <div class="p-3 border-top"><div class="d-flex justify-content-between fw-bold fs-5"><span>Total:</span><span id="cartTotalAmount">₹0</span></div>
+    <button id="checkoutBtn" class="btn btn-warning w-100 rounded-pill mt-2">Proceed to Checkout</button></div>
+</div>
+
+<div id="toastMsg" class="toast-custom"></div>
+<div class="back-to-top" id="backToTopBtn"><i class="fas fa-arrow-up text-white"></i></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============ 50 PRODUCTS WITH REAL IMAGES ============
+const productsDB = [
+    { id: 1, name: "Sony WH-1000XM5 Headphones", category: "Electronics", price: 29990, desc: "Industry-leading noise cancellation", image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=300&h=200&fit=crop", badge: "Bestseller", rating: 4.9, stock: 25 },
+    { id: 2, name: "Apple AirPods Pro 2", category: "Electronics", price: 24900, desc: "Active noise cancellation", image: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=300&h=200&fit=crop", badge: "New", rating: 4.8, stock: 40 },
+    { id: 3, name: "Samsung Galaxy Buds2 Pro", category: "Electronics", price: 15999, desc: "24-bit Hi-Fi sound", image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&h=200&fit=crop", badge: "Trending", rating: 4.7, stock: 35 },
+    { id: 4, name: "Apple Watch Series 9", category: "Electronics", price: 41900, desc: "Double tap gesture", image: "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=300&h=200&fit=crop", badge: "Premium", rating: 4.9, stock: 20 },
+    { id: 5, name: "Dell XPS 15 Laptop", category: "Electronics", price: 189990, desc: "Intel i9, 32GB RAM", image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=300&h=200&fit=crop", badge: "Flagship", rating: 4.9, stock: 10 },
+    { id: 6, name: "iPad Pro 12.9\"", category: "Electronics", price: 99900, desc: "M2 chip, Liquid Retina", image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=300&h=200&fit=crop", badge: "Apple", rating: 4.8, stock: 15 },
+    { id: 7, name: "Nike Air Jordan Hoodie", category: "Clothing", price: 5999, desc: "Premium cotton blend", image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=300&h=200&fit=crop", badge: "Streetwear", rating: 4.6, stock: 45 },
+    { id: 8, name: "Levi's 501 Jeans", category: "Clothing", price: 4999, desc: "Original fit", image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&h=200&fit=crop", badge: "Classic", rating: 4.7, stock: 50 },
+    { id: 9, name: "IKEA Malm Bed Frame", category: "Furniture", price: 24999, desc: "Queen size with storage", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=300&h=200&fit=crop", badge: "Popular", rating: 4.7, stock: 15 },
+    { id: 10, name: "Philips Air Fryer", category: "Home & Living", price: 12999, desc: "Rapid Air technology", image: "https://images.unsplash.com/photo-1585515320310-259814833e62?w=300&h=200&fit=crop", badge: "Kitchen", rating: 4.8, stock: 30 },
+    { id: 11, name: "Titan Analog Watch", category: "Accessories", price: 5999, desc: "Stainless steel strap", image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=300&h=200&fit=crop", badge: "Elegant", rating: 4.6, stock: 40 },
+    { id: 12, name: "Ray-Ban Sunglasses", category: "Accessories", price: 7999, desc: "UV protection", image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=300&h=200&fit=crop", badge: "Premium", rating: 4.8, stock: 25 }
+];
+
+// Add more products to make 50
+for(let i=13; i<=50; i++) {
+    productsDB.push({ 
+        id: i, name: `Premium Product ${i}`, category: ["Electronics","Clothing","Furniture","Home & Living","Accessories"][i%5], 
+        price: Math.floor(Math.random() * 20000) + 1000, desc: "High quality premium product", 
+        image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=200&fit=crop", 
+        badge: "Trending", rating: 4.5, stock: 20 
+    });
+}
+
+// ============ STATE ============
+let cart = [];
+let orders = [];
+let wishlist = [];
+let currentUser = null;
+let appliedCoupon = null;
+const coupons = { "SAVE10": 10, "WELCOME15": 15, "FREESHIP": 0 };
+
+// ============ TAB SWITCHING ============
+function switchTab(tabName) {
+    document.querySelectorAll('.page-container').forEach(page => page.classList.remove('active-page'));
+    const selectedPage = document.getElementById(tabName + 'Page');
+    if (selectedPage) selectedPage.classList.add('active-page');
+    
+    document.querySelectorAll('.nav-link').forEach(tab => tab.classList.remove('active-tab'));
+    const activeTab = document.getElementById(tabName + 'Tab');
+    if (activeTab) activeTab.classList.add('active-tab');
+    
+    if (tabName === 'orders') renderOrders();
+    if (tabName === 'home') renderProducts();
+    if (tabName === 'account') { updateWishlistUI(); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============ LOAD DATA ============
+function loadData() {
+    let savedCart = localStorage.getItem('quickcart_cart');
+    if(savedCart) cart = JSON.parse(savedCart);
+    let savedOrders = localStorage.getItem('quickcart_orders');
+    if(savedOrders) orders = JSON.parse(savedOrders);
+    let savedWishlist = localStorage.getItem('quickcart_wishlist');
+    if(savedWishlist) wishlist = JSON.parse(savedWishlist);
+    let savedUser = localStorage.getItem('quickcart_user');
+    if(savedUser) currentUser = JSON.parse(savedUser);
+    updateAll();
+}
+
+function saveAll() {
+    localStorage.setItem('quickcart_cart', JSON.stringify(cart));
+    localStorage.setItem('quickcart_orders', JSON.stringify(orders));
+    localStorage.setItem('quickcart_wishlist', JSON.stringify(wishlist));
+    if(currentUser) localStorage.setItem('quickcart_user', JSON.stringify(currentUser));
+    updateAll();
+}
+
+function updateAll() {
+    const totalItems = cart.reduce((s,i)=> s + i.quantity, 0);
+    document.getElementById('cartGlobalBadge').innerText = totalItems;
+    updateCartUI();
+    updateUserUI();
+    updateWishlistUI();
+}
+
+// ============ RENDER PRODUCTS ============
+function renderProducts() {
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const category = document.getElementById('categoryFilter')?.value || 'all';
+    let filtered = productsDB.filter(p => (category === 'all' || p.category === category) && 
+        (p.name.toLowerCase().includes(searchTerm) || p.desc.toLowerCase().includes(searchTerm)));
+    
+    const grid = document.getElementById('productGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = filtered.slice(0, 20).map(prod => `
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="product-card">
+                <div class="product-img">
+                    <img src="${prod.image}" alt="${prod.name}" onerror="this.src='https://placehold.co/300x200?text=${prod.name.substring(0,10)}'">
+                    <div class="product-badge">${prod.badge}</div>
+                    <button class="wishlist-btn ${wishlist.includes(prod.id) ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${prod.id})"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="p-3">
+                    <div class="rating">${'★'.repeat(Math.floor(prod.rating))}${'☆'.repeat(5-Math.floor(prod.rating))} (${prod.rating})</div>
+                    <h6 class="fw-bold mt-1">${prod.name.substring(0, 28)}</h6>
+                    <small class="text-secondary">${prod.desc.substring(0, 40)}</small>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span class="fw-bold fs-5" style="color:#f97316;">₹${prod.price.toLocaleString()}</span>
+                        <span class="text-decoration-line-through text-secondary">₹${Math.round(prod.price*1.4).toLocaleString()}</span>
+                    </div>
+                    <button class="btn-add-cart mt-2" onclick="addToCart(${prod.id}, '${prod.name.replace(/'/g, "\\'")}', ${prod.price})"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function toggleWishlist(id) {
+    if(wishlist.includes(id)) wishlist = wishlist.filter(i=> i !== id);
+    else wishlist.push(id);
+    saveAll();
+    renderProducts();
+    updateWishlistUI();
+    showToast(wishlist.includes(id) ? "Added to wishlist ❤️" : "Removed from wishlist", false);
+}
+
+// ============ CART FUNCTIONS ============
+function addToCart(id, name, price) {
+    let existing = cart.find(i=> i.id === id);
+    if(existing) existing.quantity++;
+    else cart.push({id, name, price, quantity: 1});
+    saveAll();
+    showToast(`${name} added to cart!`, false);
+}
+
+function updateCartUI() {
+    const container = document.getElementById('cartItemsList');
+    if(!container) return;
+    
+    if(cart.length === 0) { 
+        container.innerHTML = '<div class="text-center text-muted mt-5"><i class="fas fa-cart-shopping fa-3x mb-3 opacity-50"></i><br/>Cart is empty</div>'; 
+        document.getElementById('cartTotalAmount').innerText = '₹0'; 
+        return; 
+    }
+    
+    let total = 0;
+    let html = '';
+    cart.forEach(item => { 
+        total += item.price * item.quantity;
+        html += `<div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div style="flex:2"><strong>${item.name.substring(0, 20)}</strong><br><small class="text-secondary">₹${item.price.toLocaleString()}</small></div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="updateQty(${item.id}, -1)">-</button>
+                        <span class="fw-bold">${item.quantity}</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="updateQty(${item.id}, 1)">+</button>
+                        <button class="btn btn-sm btn-danger" onclick="removeCartItem(${item.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div class="fw-bold ms-2">₹${(item.price * item.quantity).toLocaleString()}</div>
+                </div>`;
+    });
+    container.innerHTML = html;
+    document.getElementById('cartTotalAmount').innerText = `₹${total.toLocaleString()}`;
+}
+
+function updateQty(id, delta) { 
+    let idx = cart.findIndex(i=> i.id===id); 
+    if(idx!==-1) { 
+        cart[idx].quantity += delta; 
+        if(cart[idx].quantity<=0) cart.splice(idx,1); 
+        saveAll(); 
+    } 
+}
+
+function removeCartItem(id) { 
+    cart = cart.filter(i=> i.id !== id); 
+    saveAll(); 
+    showToast("Item removed", false); 
+}
+
+// ============ ORDERS & CHECKOUT ============
+function applyCoupon() {
+    let code = document.getElementById('couponCode')?.value.toUpperCase();
+    if(coupons[code]) { 
+        appliedCoupon = code; 
+        document.getElementById('couponMsg').innerText = `✅ Coupon ${code} applied!`; 
+        return true; 
+    } else if(code) { 
+        document.getElementById('couponMsg').innerText = '❌ Invalid coupon'; 
+        appliedCoupon = null; 
+        return false; 
+    }
+    return false;
+}
+
+document.getElementById('checkoutForm')?.addEventListener('submit', function(e) { 
+    e.preventDefault(); 
+    applyCoupon(); 
+    placeOrderFromCheckout(); 
+});
+
+function placeOrderFromCheckout() {
+    if(cart.length===0) { showToast("Cart is empty!", true); return; }
+    
+    let total = cart.reduce((s,i)=> s + i.price*i.quantity, 0);
+    let discountAmount = 0;
+    if(appliedCoupon && coupons[appliedCoupon]) {
+        if(appliedCoupon === 'FREESHIP') discountAmount = 50;
+        else discountAmount = total * coupons[appliedCoupon] / 100;
+    }
+    let finalTotal = total - discountAmount;
+    
+    const orderId = 'ORD' + Date.now();
+    const trackingSteps = ['Order Placed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
+    const newOrder = { 
+        id: orderId, 
+        date: new Date().toLocaleString(), 
+        items: [...cart], 
+        subtotal: total, 
+        discount: discountAmount, 
+        total: finalTotal, 
+        status: 'Payment Receipt',
+        trackingStep: 0,
+        trackingSteps: trackingSteps,
+        deliveryStatus: 'Order Placed',
+        customer: { 
+            name: document.getElementById('fullName').value, 
+            email: document.getElementById('emailAddress').value, 
+            address: document.getElementById('shippingAddress').value, 
+            payment: document.getElementById('paymentMethod').value 
+        }
+    };
+    
+    orders.unshift(newOrder);
+    saveAll();
+    cart = [];
+    saveAll();
+    
+    showConfirmation(newOrder);
+    switchTab('confirmation');
+    showToast(`🎉 Order placed! Order ID: ${orderId}`, false);
+}
+
+function showConfirmation(order) {
+    let html = `
+        <div class="mb-3"><strong>Order ID:</strong> ${order.id}</div>
+        <div class="mb-3"><strong>Date:</strong> ${order.date}</div>
+        <div class="mb-3"><strong>Total Amount:</strong> <span class="fw-bold fs-5" style="color:#f97316;">₹${order.total.toLocaleString()}</span></div>
+        <div class="mb-3"><strong>Payment Method:</strong> ${order.customer.payment}</div>
+        <div class="mb-3"><strong>Shipping Address:</strong> ${order.customer.address}</div>
+        <hr>
+        <strong>Items Ordered:</strong>
+        ${order.items.map(i => `<div class="d-flex justify-content-between mt-2"><span>${i.name} x ${i.quantity}</span><span>₹${(i.price * i.quantity).toLocaleString()}</span></div>`).join('')}
+    `;
+    document.getElementById('confirmationDetails').innerHTML = html;
+}
+
+function getTrackingStepStatus(order, index) {
+    if (index < order.trackingStep) return 'completed';
+    if (index === order.trackingStep) return 'active';
+    return '';
+}
+
+// RENDER ORDERS WITH PAYMENT RECEIPT
+function renderOrders() {
+    const container = document.getElementById('ordersList');
+    if(!container) return;
+    
+    if(orders.length===0) { 
+        container.innerHTML = '<div class="col-md-8 text-center text-muted py-5"><i class="fas fa-file-invoice fa-4x mb-3 opacity-50"></i><h4>No Payment Receipts Found</h4><p>Complete a purchase to see your payment receipts here!</p><button class="btn btn-warning rounded-pill px-4" onclick="switchTab(\'home\')">Start Shopping</button></div>'; 
+        return; 
+    }
+    
+    container.innerHTML = '<div class="col-md-9">' + orders.map(order => `
+        <div class="order-card">
+            <div class="order-header">
+                <div>
+                    <strong><i class="fas fa-file-invoice"></i> Payment Receipt #${order.id}</strong><br>
+                    <small>${order.date}</small>
+                </div>
+                <div>
+                    <span class="order-status-badge">${order.status}</span>
+                </div>
+            </div>
+            <div class="p-3">
+                <!-- Customer Details -->
+                <div class="mb-3 p-3 rounded-3" style="background: var(--bg-primary);">
+                    <h6 class="mb-2"><i class="fas fa-user"></i> Customer Details</h6>
+                    <div><strong>Name:</strong> ${order.customer.name}</div>
+                    <div><strong>Email:</strong> ${order.customer.email}</div>
+                    <div><strong>Address:</strong> ${order.customer.address}</div>
+                    <div><strong>Payment:</strong> ${order.customer.payment}</div>
+                </div>
+                
+                <!-- Order Items -->
+                <h6 class="mb-2"><i class="fas fa-box"></i> Items Purchased</h6>
+                ${order.items.map(i=> `<div class="d-flex justify-content-between py-2 border-bottom"><span>${i.name} x ${i.quantity}</span><span>₹${(i.price*i.quantity).toLocaleString()}</span></div>`).join('')}
+                
+                <!-- Price Summary -->
+                <div class="mt-3 pt-2 border-top">
+                    <div class="d-flex justify-content-between"><span>Subtotal:</span><span>₹${order.subtotal.toLocaleString()}</span></div>
+                    <div class="d-flex justify-content-between text-success"><span>Discount:</span><span>-₹${order.discount.toLocaleString()}</span></div>
+                    <div class="d-flex justify-content-between fw-bold fs-5 mt-2 pt-2 border-top">
+                        <span>Total Paid:</span>
+                        <span style="color:#f97316;">₹${order.total.toLocaleString()}</span>
+                    </div>
+                </div>
+                
+                <!-- Download PDF Button -->
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary rounded-pill px-4" onclick="downloadSingleReceipt(${JSON.stringify(order).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-download"></i> Download PDF Receipt
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('') + '</div>';
+}
+
+// Download single receipt as PDF
+function downloadSingleReceipt(order) {
+    const receiptHTML = `
+        <div style="padding: 30px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+            <div style="text-align: center; border-bottom: 2px solid #f97316; padding-bottom: 20px; margin-bottom: 20px;">
+                <h1 style="color: #f97316; margin: 0;">QuickCart Pro</h1>
+                <h2 style="color: #666;">Payment Receipt</h2>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <p><strong>Receipt No:</strong> ${order.id}</p>
+                <p><strong>Date:</strong> ${order.date}</p>
+                <p><strong>Payment Status:</strong> <span style="color: green;">✓ Paid</span></p>
+            </div>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h3>Customer Information</h3>
+                <p><strong>Name:</strong> ${order.customer.name}<br>
+                <strong>Email:</strong> ${order.customer.email}<br>
+                <strong>Address:</strong> ${order.customer.address}<br>
+                <strong>Payment Method:</strong> ${order.customer.payment}</p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr><th style="border-bottom: 2px solid #ddd; padding: 10px; text-align: left;">Item</th>
+                        <th style="border-bottom: 2px solid #ddd; padding: 10px; text-align: center;">Qty</th>
+                        <th style="border-bottom: 2px solid #ddd; padding: 10px; text-align: right;">Price</th>
+                        <th style="border-bottom: 2px solid #ddd; padding: 10px; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${order.items.map(i => `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #ddd;">${i.name}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${i.quantity}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">₹${i.price.toLocaleString()}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">₹${(i.price * i.quantity).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+                <tfoot>
+                    <tr><td colspan="3" style="padding: 10px; text-align: right;"><strong>Subtotal:</strong></td><td style="padding: 10px; text-align: right;">₹${order.subtotal.toLocaleString()}</td></tr>
+                    <tr><td colspan="3" style="padding: 10px; text-align: right;"><strong>Discount:</strong></td><td style="padding: 10px; text-align: right;">-₹${order.discount.toLocaleString()}</td></tr>
+                    <tr style="border-top: 2px solid #f97316;"><td colspan="3" style="padding: 10px; text-align: right;"><strong style="font-size: 1.2em;">Grand Total:</strong></td><td style="padding: 10px; text-align: right;"><strong style="font-size: 1.2em; color: #f97316;">₹${order.total.toLocaleString()}</strong></td></tr>
+                </tfoot>
+            </table>
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999;">
+                <p>Thank you for shopping with QuickCart Pro!</p>
+                <p>For any queries, contact support@quickcart.com</p>
+            </div>
+        </div>
+    `;
+    
+    const element = document.createElement('div');
+    element.innerHTML = receiptHTML;
+    document.body.appendChild(element);
+    
+    html2pdf().from(element).set({
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `Payment_Receipt_${order.id}.pdf`,
+        html2canvas: { scale: 2, letterRendering: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    }).save().then(() => {
+        document.body.removeChild(element);
+        showToast("✅ PDF Receipt Downloaded Successfully!", false);
+    });
+}
+
+// ============ USER FUNCTIONS ============
+function loginUser() {
+    let name = document.getElementById('loginName').value;
+    let email = document.getElementById('loginEmail').value;
+    if(name && email) { 
+        currentUser = { name, email }; 
+        saveAll(); 
+        updateUserUI(); 
+        bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide(); 
+        showToast(`Welcome ${name}!`, false); 
+    } else {
+        showToast("Please enter name and email", true);
+    }
+}
+
+function logoutUser() { 
+    currentUser = null; 
+    localStorage.removeItem('quickcart_user'); 
+    updateUserUI(); 
+    showToast("Logged out successfully", false); 
+}
+
+function updateUserUI() {
+    if(currentUser) { 
+        document.getElementById('userDisplayName').innerText = currentUser.name; 
+        document.getElementById('userDisplayEmail').innerText = currentUser.email; 
+        document.getElementById('logoutBtn').style.display = 'inline-block'; 
+    } else { 
+        document.getElementById('userDisplayName').innerText = 'Guest User'; 
+        document.getElementById('userDisplayEmail').innerText = 'Not logged in'; 
+        document.getElementById('logoutBtn').style.display = 'none'; 
+    }
+}
+
+function updateWishlistUI() { 
+    document.getElementById('wishlistCount').innerText = wishlist.length; 
+    let items = wishlist.map(id => productsDB.find(p=> p.id===id)).filter(p=>p).map(p=> `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded-3" style="background: var(--bg-primary);">
+            <div><i class="fas fa-heart text-danger"></i> ${p.name.substring(0, 25)} - ₹${p.price.toLocaleString()}</div>
+            <button class="btn btn-sm btn-danger rounded-pill" onclick="toggleWishlist(${p.id})">Remove</button>
+        </div>
+    `).join(''); 
+    document.getElementById('wishlistItems').innerHTML = items || '<div class="text-center text-muted py-3">No items in wishlist <i class="far fa-heart"></i></div>'; 
+}
+
+// ============ DELIVERY TIMER ============
+let timerInterval;
+function startTimer() { 
+    let time = 3599; 
+    timerInterval = setInterval(() => { 
+        let mins = Math.floor(time/60); 
+        let secs = time%60; 
+        document.getElementById('timerCountdown').innerText = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`; 
+        if(time<=0) clearInterval(timerInterval); 
+        time--; 
+    }, 1000); 
+}
+startTimer();
+
+// ============ HELPER FUNCTIONS ============
+function showToast(msg, isErr) { 
+    let t = document.getElementById('toastMsg'); 
+    t.innerHTML = `<i class="fas ${isErr ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-2"></i> ${msg}`; 
+    t.style.background = isErr ? '#ef4444' : '#10b981'; 
+    t.classList.add('show-toast'); 
+    setTimeout(()=> t.classList.remove('show-toast'), 2000); 
+}
+
+// ============ EVENT LISTENERS ============
+document.getElementById('searchInput')?.addEventListener('keyup', ()=> renderProducts());
+document.getElementById('categoryFilter')?.addEventListener('change', ()=> renderProducts());
+document.getElementById('cartIconBtn')?.addEventListener('click', ()=> document.getElementById('cartSidebar').classList.add('open'));
+document.getElementById('closeCartBtn')?.addEventListener('click', ()=> document.getElementById('cartSidebar').classList.remove('open'));
+document.getElementById('cartOverlay')?.addEventListener('click', ()=> document.getElementById('cartSidebar').classList.remove('open'));
+document.getElementById('checkoutBtn')?.addEventListener('click', ()=> { 
+    document.getElementById('cartSidebar').classList.remove('open'); 
+    switchTab('checkout'); 
+});
+
+// Dark Mode
+document.getElementById('darkModeToggle')?.addEventListener('click', ()=> { 
+    document.body.classList.toggle('dark'); 
+    localStorage.setItem('darkMode', document.body.classList.contains('dark')); 
+    if(document.body.classList.contains('dark')) document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-sun"></i> Light'; 
+    else document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-moon"></i> Dark'; 
+});
+if(localStorage.getItem('darkMode') === 'true') { 
+    document.body.classList.add('dark'); 
+    document.getElementById('darkModeToggle').innerHTML = '<i class="fas fa-sun"></i> Light'; 
+}
+
+// Back to top
+window.addEventListener('scroll', ()=> { document.getElementById('backToTopBtn').style.display = window.scrollY > 400 ? 'flex' : 'none'; });
+document.getElementById('backToTopBtn')?.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+
+// Initialize
+loadData();
+renderProducts();
+
+// Make functions global
+window.switchTab = switchTab;
+window.addToCart = addToCart;
+window.toggleWishlist = toggleWishlist;
+window.updateQty = updateQty;
+window.removeCartItem = removeCartItem;
+window.loginUser = loginUser;
+window.logoutUser = logoutUser;
+window.downloadSingleReceipt = downloadSingleReceipt;
+</script>
+</body>
+</html>
